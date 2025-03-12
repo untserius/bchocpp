@@ -114,6 +114,7 @@ public class ocppServiceImpl implements ocppService {
 				Thread thread = new Thread() {
 					public void run() {
 						OCPPForm ocppForm=new OCPPForm();
+						ocppForm.setEndTimeStamp(of.getEndTimeStamp());
 						ocppForm.setStationId(of.getStationId());
 						ocppForm.setClientId(of.getClientId());
 						ocppForm.setConnectorId(Long.parseLong(String.valueOf(data.get("id"))));

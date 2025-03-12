@@ -12,6 +12,7 @@ import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Collectors;
 
+import com.axxera.ocpp.service.ScheduledMaintenanceService;
 import org.json.simple.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -124,6 +125,9 @@ public class ApiResponseServiceImpl implements ApiResponseService {
 	
 	@Autowired
 	private userService userService;
+
+	@Autowired
+	private ScheduledMaintenanceService scheduledMaintenanceService;
 	
 	@Override
 	public ResponseMessage reset(OCPPForm of,Map<String, WebSocketSession> sessionswithstations) {
@@ -216,11 +220,14 @@ public class ApiResponseServiceImpl implements ApiResponseService {
 			final long portId = of.getConnectorId();
 			final long connectorId = stationService.getStationConnectorId(portId);
 			final String value = of.getType();
+
 			String uniqueID = Utils.getStationRandomNumber(stationId)  + ":CA";
 			WebSocketSession webSocketSessionObj = sessionswithstations.get(stationRefNum);
 			String portStatus = statusNotificationService.getStatus(stationId,portId);
 			String msg = "[2,\"" + uniqueID.toString() + "\",\"ChangeAvailability\",{\"connectorId\":" + connectorId
 					+ ",\"type\":\"" + value + "\"}]";
+
+
 			if (Optional.ofNullable(webSocketSessionObj).isPresent() && portStatus != null && webSocketSessionObj.isOpen()) {
 				if (portStatus != null && !portStatus.equalsIgnoreCase("")) {
 					OCPPChangeAvailabilityService.addChangeAvailabiliy(portId, uniqueID,value, Utils.getUtcDateFormate(new Date()), stationId);
@@ -242,10 +249,18 @@ public class ApiResponseServiceImpl implements ApiResponseService {
 				esLoggerUtil.insertLongs(uniqueID,"Portal","ChangeAvailability",msg,stationRefNum,stationId,"Station Disconnected",connectorId);
 			}
 			if(response.getStatus().equalsIgnoreCase("Accepted")) {
+				// For Inoperative requests, create a maintenance record
+				if ("Inoperative".equalsIgnoreCase(value) && of.getEndTimeStamp() != null) {
+					scheduledMaintenanceService.insertIntoScheduledMaintenance(portId, stationId, of.getEndTimeStamp());
+				}
+
 				statusSendingDataService.addData("ChangeAvailability", uniqueID, stationId, "Inprogress","", 0, 0, portId, "", "", "","Portal");
 				int timeout = 90;
 				String responseStatus="";
 				String responseMessage="";
+				System.out.println(portId);
+				System.out.println(stationId);
+				System.out.println(of.getEndTimeStamp());
 				while (timeout > 0) {
 					Thread.sleep(3000);
 					Map<String, Object> statusFromRequest = statusSendingDataService.getStatusSendingData(uniqueID);
@@ -264,6 +279,16 @@ public class ApiResponseServiceImpl implements ApiResponseService {
 				}else {
 					response.setStatus("Accepted");
 					response.setMessage("");
+				}
+
+				// Update the response in the maintenance record
+				scheduledMaintenanceService.updateResponseInMaintenance(portId, responseStatus);
+
+				// If this was an Operative command AND response is Accepted, delete the maintenance record
+				if ("Operative".equalsIgnoreCase(value) && "Accepted".equalsIgnoreCase(responseStatus)) {
+					scheduledMaintenanceService.deleteFromScheduledMaintenance(portId);
+					customeLogger.info(stationRefNum, "Deleted maintenance record for port: " + portId +
+							" after successful Operative status change");
 				}
 			}else {
 				customeLogger.info(stationRefNum, "Station is not connected to Ocpp Server for ChangeAvailablility");

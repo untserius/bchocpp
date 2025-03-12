@@ -42,10 +42,6 @@ public class Accounts extends BaseEntity {
 	@Column(name = "creation_date", length = 10)
 	private Date creationDate;
 
-	@Temporal(TemporalType.DATE)
-	@Column(name = "modified_date", length = 10)
-	private Date modifiedDate;
-
 	@Column(name = "activeAccount", nullable = false)
 	private boolean activeAccount;
 
@@ -90,7 +86,9 @@ public class Accounts extends BaseEntity {
 		return creationDate;
 	}
 
-	public void setCreationDate(Date creationDate) {this.creationDate = creationDate;}
+	public void setCreationDate(Date creationDate) {
+		this.creationDate = creationDate;
+	}
 
 	public boolean isActiveAccount() {
 		return activeAccount;
@@ -211,8 +209,4 @@ public class Accounts extends BaseEntity {
 	public void setDigitalId(String digitalId) {
 		this.digitalId = digitalId;
 	}
-
-	public Date getModifiedDate() {return modifiedDate;}
-
-	public void setModifiedDate(Date modifiedDate) {this.modifiedDate = modifiedDate;}
 }

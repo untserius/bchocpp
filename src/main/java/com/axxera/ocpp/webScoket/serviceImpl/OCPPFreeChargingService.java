@@ -4,7 +4,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.axxera.ocpp.utils.Utils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,9 +23,6 @@ public class OCPPFreeChargingService {
 	
 	@Autowired
 	private ExecuteRepository executeRepository;
-
-	@Autowired
-	private Utils utils;
 	
 	private static final Logger logger = LoggerFactory.getLogger(OCPPFreeChargingService.class);
 	
@@ -115,7 +111,7 @@ public class OCPPFreeChargingService {
 				if(mapData.size()>0) {
 					String inOperativeFlag = String.valueOf(mapData.get(0).get("inOperativeFlag"));
 					if(inOperativeFlag.equalsIgnoreCase("1")) {
-						String query = "Update Session set reasonForTer ='EVDisconnected',transactionStatus='completed', modifiedDate=GETUTCDATE() where reasonForTer = 'InSession'";
+						String query = "Update Session set reasonForTer ='EVDisconnected',transactionStatus='completed' where reasonForTer = 'InSession'";
 						executeRepository.update(query);
 						Thread.sleep(1000);
 						String query1 = "update station set inOperativeRequestSent= 1 where referNo='"+stationRefNum+"'";

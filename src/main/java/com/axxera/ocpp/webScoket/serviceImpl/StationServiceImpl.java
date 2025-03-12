@@ -654,7 +654,7 @@ public class StationServiceImpl implements StationService {
 						: statusNoti.getStatus().equalsIgnoreCase("Faulted") ? "Blocked"
 						: statusNoti.getStatus().equalsIgnoreCase("Preparing") ? "Planned"
 						: statusNoti.getStatus();
-				if(statusNoti!=null &&statusNoti.getConnectorId()>0) {
+				if(statusNoti!=null && statusNoti.getConnectorId()>0) {
 					String query="select sn.status,p.id as portId from statusNotification sn inner join port p on p.id=sn.port_id where p.connector_id='"+statusNoti.getConnectorId()+"' and p.station_id='"+stnId+"' order by sn.id desc";
 					List<Map<String,Object>> list = executeRepository.findAll(query);
 					if(list.size()>0) {

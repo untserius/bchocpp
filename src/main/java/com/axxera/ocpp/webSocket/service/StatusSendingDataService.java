@@ -1,5 +1,6 @@
 package com.axxera.ocpp.webSocket.service;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -38,4 +39,10 @@ public interface StatusSendingDataService {
 	boolean updateResetStausInPortal(String uniqueID, String status, String response, Long statusId) ;
 
 	public List<ChargerDefaultConfiguration> getDefaultChargerConfiguration();
+
+//	void deleteFromScheduledMaintenance(long portId);
+//
+//	void insertIntoScheduledMaintenance(long portId, long stationId, Date endTimeStamp);
+//
+//	public void updateResponseInMaintenance(long portId, String response);
 }

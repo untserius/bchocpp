@@ -132,7 +132,7 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 					sTxn = pricingDetailsByStnId(sTxn);
 					sTxn.getTxnData().setBillingCases("Freeven");
 				}else if(String.valueOf(sTxn.getStnObj().get("stationMode")).equalsIgnoreCase("paymentMode")) {
-					if(Double.valueOf(String.valueOf(sTxn.getUserObj().get("accountBalance"))) >= minBalance) {
+					if(Double.valueOf(String.valueOf(sTxn.getUserObj().get("accountBalance"))) >= minBalance || sTxn.isOfflineTxn()) { // Offline changes added
 						sTxn.setTxnValid(true);
 						Map<String, Object> driverGroupdId = userService.driverGroupdIdRemoteAuth(Long.valueOf(String.valueOf(sTxn.getStnObj().get("stnId"))),Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))));
 						logger.info("driverGroupdId : "+driverGroupdId);
@@ -145,7 +145,7 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 					}else {
 						Map<String, Object> driverGroupdId = userService.driverGroupdIdRemoteAuth(Long.valueOf(String.valueOf(sTxn.getStnObj().get("stnId"))),Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))));
 						logger.info("driverGroupdId : "+driverGroupdId);
-						if(driverGroupdId != null && !driverGroupdId.isEmpty() && (Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreekWh"))) > 0 || Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreeMin"))) > 0 || Boolean.valueOf(String.valueOf(driverGroupdId.get("noZeroBalChecking"))))) {
+						if(driverGroupdId != null && !driverGroupdId.isEmpty() && (Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreekWh"))) > 0 || Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreeMin"))) > 0 || Boolean.valueOf(String.valueOf(driverGroupdId.get("noZeroBalChecking"))))|| sTxn.isOfflineTxn()) {
 							sTxn.setTxnValid(true);
 							sTxn = freeCostDetailsByDriverGroup(sTxn,driverGroupdId);
 							sTxn = pricingDetailsByDriverGroupId(sTxn);
@@ -155,11 +155,14 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 					}
 				}else if(String.valueOf(sTxn.getStnObj().get("stationMode")).equalsIgnoreCase("drivergroup")) {
 					Map<String, Object> driverGroupdId = userService.driverGroupdIdRemoteAuth(Long.valueOf(String.valueOf(sTxn.getStnObj().get("stnId"))),Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))));
-					if(driverGroupdId != null && !driverGroupdId.isEmpty() && (Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreekWh"))) > 0 || Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreeMin"))) > 0 || Double.valueOf(String.valueOf(sTxn.getUserObj().get("accountBalance"))) >= minBalance  || Boolean.valueOf(String.valueOf(driverGroupdId.get("noZeroBalChecking"))))) {
+					if(driverGroupdId != null && !driverGroupdId.isEmpty() && (Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreekWh"))) > 0 || Double.valueOf(String.valueOf(driverGroupdId.get("remainingFreeMin"))) > 0 || Double.valueOf(String.valueOf(sTxn.getUserObj().get("accountBalance"))) >= minBalance  || Boolean.valueOf(String.valueOf(driverGroupdId.get("noZeroBalChecking")))) || sTxn.isOfflineTxn()) {
 						sTxn.setTxnValid(true);
 						sTxn = freeCostDetailsByDriverGroup(sTxn,driverGroupdId);
 						sTxn = pricingDetailsByDriverGroupId(sTxn);
-					}else {
+					}
+
+					else {
+
 						sTxn.setReason("Station not in public group");
 						sTxn.setTxnValid(false);
 					}
@@ -231,42 +234,52 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 		}
 		return sTxn;
 	}
-	public startTxn freeCostDetailsByDriverGroup(startTxn sTxn,Map<String,Object> driverGrpDetails) {
+	public startTxn freeCostDetailsByDriverGroup(startTxn sTxn, Map<String,Object> driverGrpDetails) {
 		try {
-			Double freeMins = Double.valueOf(String.valueOf(driverGrpDetails.get("freeMins")));
-			Double freeKwh = Double.valueOf(String.valueOf(driverGrpDetails.get("freeKwh")));
-			List<Map<String, Object>> freeLs=new ArrayList<>();
-			String str = "select top 1 id,createdDate,userId,usedFreeMins,usedFreekWhs From freeChargingForDriverGrp Where userId='" + Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId")))+"' and createdDate='"+utils.getDate(sTxn.getStartTime())+"' order by id desc";
-			List<Map<String, Object>> fcdg = generalDao.getMapData(str);
-			double usedFreeKwh=0.0;
-			double usedFreeMins=0.0;
-			if(fcdg.size() > 0) {
-				usedFreeKwh = Double.valueOf(String.valueOf(fcdg.get(0).get("usedFreekWhs")));
-				usedFreeMins = Double.valueOf(String.valueOf(fcdg.get(0).get("usedFreeMins")));
-				if(freeMins > usedFreeMins) {
-					freeMins = freeMins - usedFreeMins;
-				}else {
-					freeMins = 0.00;
-				}
-				if(freeKwh > usedFreeKwh) {
-					freeKwh = freeKwh - usedFreeKwh;
-				}else {
-					freeKwh = 0.00;
-				}
-			}
+			// Get current free pricing limits
+			Double currentFreeMins = Double.valueOf(String.valueOf(driverGrpDetails.get("freeMins")));
+			Double currentFreeKwh = Double.valueOf(String.valueOf(driverGrpDetails.get("freeKwh")));
+
+			List<Map<String, Object>> freeLs = new ArrayList<>();
 			Map<String,Object> freeMap = new HashMap<>();
-			freeMap.put("freeMins", freeMins);
-			freeMap.put("freeKwh", freeKwh);
-			freeMap.put("usedFreeKwhs", usedFreeKwh);
-			freeMap.put("usedFreeMins", usedFreeMins);
+			freeMap.put("freeMins", currentFreeMins);
+			freeMap.put("freeKwh", currentFreeKwh);
+			freeMap.put("usedFreeKwhs", 0.00);
+			freeMap.put("usedFreeMins", 0.00);
 			freeLs.add(freeMap);
+
+			// Get total used for the day
+			String query = "select top 1 usedFreekWhs, usedFreeMins " +
+					"from freeChargingForDriverGrp where userId='" + Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))) + "' " +
+					"and createdDate='" + utils.getDate(sTxn.getStartTime()) + "' " +
+					"order by id desc";
+
+			List<Map<String, Object>> dailyUsage = generalDao.getMapData(query);
+
+			if (!dailyUsage.isEmpty()) {
+				// Get current day's usage
+				double usedFreeKwh = Double.valueOf(String.valueOf(dailyUsage.get(0).get("usedFreekWhs")));
+				double usedFreeMins = Double.valueOf(String.valueOf(dailyUsage.get(0).get("usedFreeMins")));
+
+				// Check if there's still room for free usage under current limits
+				if ((currentFreeKwh - usedFreeKwh) > 0 || (currentFreeMins - usedFreeMins) > 0) {
+					sTxn.getTxnData().setBillingCases(sTxn.getTxnData().getBillingCases().equalsIgnoreCase("TOU+Rewards") ?
+							"TOU+Free+Rewards" : "TOU+Free");
+				}
+			} else {
+				// First transaction of the day
+				sTxn.getTxnData().setBillingCases(sTxn.getTxnData().getBillingCases().equalsIgnoreCase("TOU+Rewards") ?
+						"TOU+Free+Rewards" : "TOU+Free");
+			}
+
+			// Set driver group details
 			sTxn.setDriverGroupId(Long.valueOf(String.valueOf(driverGrpDetails.get("driverGroupId"))));
 			sTxn.setDriverGroupName(String.valueOf(driverGrpDetails.get("groupName")));
 			sTxn.getTxnData().setDriverGroupId(Long.valueOf(String.valueOf(driverGrpDetails.get("driverGroupId"))));
 			sTxn.getTxnData().setDgNoZeroBal(Boolean.valueOf(String.valueOf(driverGrpDetails.get("noZeroBalChecking"))));
 			sTxn.getTxnData().setFree_prices(objectMapper.writeValueAsString(freeLs));
-			sTxn.getTxnData().setBillingCases(sTxn.getTxnData().getBillingCases().equalsIgnoreCase("TOU+Rewards") ? "TOU+Free+Rewards" :"TOU+Free");
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 		return sTxn;
@@ -424,9 +437,6 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 			sess.setSiteId(Long.parseLong(String.valueOf(sTxn.getSiteObj().get("siteId"))));
 			sess.setSiteType(String.valueOf(sTxn.getSiteObj().get("bcHydroSiteType")));
 			sess.setTxnInitiate(sTxn.getTxnInitiate()==null ?"Mobile Application" : sTxn.getTxnInitiate());
-			sess.setModifiedDate(utils.getUTCDate());
-			sess.setEnergyModify(false);
-			sess.setActualEnergy(0);
 			sess = generalDao.save(sess);
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -446,7 +456,6 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 			Map<String,Object> map=maximumRevenuekWh(Long.valueOf(String.valueOf(sTxn.getSite_orgId())));
 			double maximumRevenue=Double.parseDouble(String.valueOf(map.get("maximumRevenue")));
 			double maxkWh=Double.parseDouble(String.valueOf(map.get("maxkWh")));
-			double maxCapacityPer=Double.parseDouble(String.valueOf(map.get("maxCapacityPer")));
 			txnData.setPortId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("portId"))));
 			txnData.setSessionId(sTxn.getChargeSessUniqId());
 			txnData.setDriverGroupId(sTxn.getDriverGroupId());
@@ -466,8 +475,8 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 			txnData.setIdleStatus("start");
 			txnData.setMaximumRevenue(maximumRevenue);
 			txnData.setMaxkWh(maxkWh);
-			txnData.setMaxCapacityPer(maxCapacityPer);
 			txnData.setkWhStatus("");
+			txnData.setOfflineTransaction(sTxn.isOfflineTxn());
 			txnData.setReasonForTer("Insession");
 			logger.info("186 >> txnData : "+txnData);
 			txnData = generalDao.save(txnData);
@@ -479,16 +488,14 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 	public Map<String,Object> maximumRevenuekWh(Long orgId) {
 		Map<String,Object> map=new HashMap();
 		try {
-			String query="select maximumRevenue,maxkWh,maxCapacityPer from ocpp_settings where orgId='"+orgId+"'";
+			String query="select maximumRevenue,maxkWh from ocpp_settings where orgId='"+orgId+"'";
 			List<Map<String,Object>> list=executeRepository.findAll(query);
 			if(list.size()>0) {
 				map.put("maximumRevenue", Double.parseDouble(String.valueOf(list.get(0).get("maximumRevenue"))));
 				map.put("maxkWh", Double.parseDouble(String.valueOf(list.get(0).get("maxkWh"))));
-				map.put("maxCapacityPer", Double.parseDouble(String.valueOf(list.get(0).get("maxCapacityPer"))));
 			}else {
 				map.put("maximumRevenue", 150);
 				map.put("maxkWh", 200);
-				map.put("maxkWh", 25);
 			}
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -522,7 +529,7 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 	@Override
 	public void updateChargingSessionData(Long portId) {
 		try {
-			String deleteActiveTrans = "Update session set reasonForTer ='EVDisconnected',transactionStatus='completed', modifiedDate= GETUTCDATE() where reasonForTer = 'InSession' and port_id = " + portId + " ";
+			String deleteActiveTrans = "Update session set reasonForTer ='EVDisconnected',transactionStatus='completed' where reasonForTer = 'InSession' and port_id = " + portId + " ";
 			executeRepository.update(deleteActiveTrans);
 		}catch (Exception e) {
 			e.printStackTrace();
@@ -569,32 +576,34 @@ public class chargingSessionServiceImpl implements chargingSessionService{
 	@Override
 	public startTxn insertActiveTxnStartTxn(startTxn sTxn) {
 		try {
-			if(sTxn.getActiveTxnData()==null) {
-				OCPPActiveTransaction ocppActiveTransaction = new OCPPActiveTransaction();
-				ocppActiveTransaction.setConnectorId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("portId"))));
-				ocppActiveTransaction.setMessageType("StartTransaction");
-				ocppActiveTransaction.setRfId(sTxn.getIdTag());
-				ocppActiveTransaction.setSessionId(sTxn.getChargeSessUniqId());
-				ocppActiveTransaction.setStationId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("stnId"))));
-				ocppActiveTransaction.setStatus("charging");
-				ocppActiveTransaction.setTransactionId(sTxn.getTransactionId());
-				ocppActiveTransaction.setUserId(sTxn.isRegisteredTxn() == true ? Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))) : 0);
-				ocppActiveTransaction.setRequestedID(sTxn.getSt_unqReqId());
-				ocppActiveTransaction.setOrgId(sTxn.getSite_orgId());
-				ocppActiveTransaction.setTimeStamp(utils.getUTCDate());
-				generalDao.save(ocppActiveTransaction);
-			}else {
-				//Update the Session reason to EvDisconnect If any Active Session Available without any Stop Transaction and Get again StartTransaction
-				OCPPActiveTransaction activeTransactionObj = sTxn.getActiveTxnData();
-				activeTransactionObj.setRequestedID(sTxn.getSt_unqReqId());
-				activeTransactionObj.setRfId(sTxn.getIdTag());
-				activeTransactionObj.setStatus("charging");
-				activeTransactionObj.setUserId(sTxn.isRegisteredTxn() == true ? Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))) : 0);
-				activeTransactionObj.setTransactionId(sTxn.getTransactionId());
-				activeTransactionObj.setSessionId(sTxn.getChargeSessUniqId());
-				activeTransactionObj.setTimeStamp(utils.getUTCDate());
-				activeTransactionObj.setConnectorId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("portId"))));
-				generalDao.update(activeTransactionObj);
+			if (!sTxn.isOfflineTxn()){ // Offline transaction Change
+				if (sTxn.getActiveTxnData() == null) {
+					OCPPActiveTransaction ocppActiveTransaction = new OCPPActiveTransaction();
+					ocppActiveTransaction.setConnectorId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("portId"))));
+					ocppActiveTransaction.setMessageType("StartTransaction");
+					ocppActiveTransaction.setRfId(sTxn.getIdTag());
+					ocppActiveTransaction.setSessionId(sTxn.getChargeSessUniqId());
+					ocppActiveTransaction.setStationId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("stnId"))));
+					ocppActiveTransaction.setStatus("charging");
+					ocppActiveTransaction.setTransactionId(sTxn.getTransactionId());
+					ocppActiveTransaction.setUserId(sTxn.isRegisteredTxn() == true ? Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))) : 0);
+					ocppActiveTransaction.setRequestedID(sTxn.getSt_unqReqId());
+					ocppActiveTransaction.setOrgId(sTxn.getSite_orgId());
+					ocppActiveTransaction.setTimeStamp(utils.getUTCDate());
+					generalDao.save(ocppActiveTransaction);
+				} else {
+					//Update the Session reason to EvDisconnect If any Active Session Available without any Stop Transaction and Get again StartTransaction
+					OCPPActiveTransaction activeTransactionObj = sTxn.getActiveTxnData();
+					activeTransactionObj.setRequestedID(sTxn.getSt_unqReqId());
+					activeTransactionObj.setRfId(sTxn.getIdTag());
+					activeTransactionObj.setStatus("charging");
+					activeTransactionObj.setUserId(sTxn.isRegisteredTxn() == true ? Long.valueOf(String.valueOf(sTxn.getUserObj().get("UserId"))) : 0);
+					activeTransactionObj.setTransactionId(sTxn.getTransactionId());
+					activeTransactionObj.setSessionId(sTxn.getChargeSessUniqId());
+					activeTransactionObj.setTimeStamp(utils.getUTCDate());
+					activeTransactionObj.setConnectorId(Long.valueOf(String.valueOf(sTxn.getStnObj().get("portId"))));
+					generalDao.update(activeTransactionObj);
+				}
 			}
 		}catch (Exception e) {
 			e.printStackTrace();

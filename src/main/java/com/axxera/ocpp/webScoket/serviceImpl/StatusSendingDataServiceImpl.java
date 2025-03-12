@@ -1,8 +1,10 @@
 package com.axxera.ocpp.webScoket.serviceImpl;
 
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
+import com.axxera.ocpp.model.ocpp.ScheduledMaintenance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -96,4 +98,39 @@ public class StatusSendingDataServiceImpl implements StatusSendingDataService {
 		logger.info("fetching DCC data >>213: " + DCClist);
 		return  DCClist;
 	}
+
+//	@Override
+//	public void deleteFromScheduledMaintenance(long portId) {
+//		try {
+//			String deleteQuery = "DELETE FROM ScheduledMaintenance WHERE portId = " + portId;
+//			generalDao.updateHqlQuiries(deleteQuery);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+//
+//	@Override
+//	public void insertIntoScheduledMaintenance(long portId, long stationId, Date endTimeStamp) {
+//		try {
+//			ScheduledMaintenance sm = new ScheduledMaintenance();
+//			sm.setStnId(stationId);
+//			sm.setPortId(portId);
+//			sm.setEndTimeStamp(endTimeStamp);
+//			sm.setResponse("Inprogress");
+//
+//			generalDao.save(sm);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
+//
+//	@Override
+//	public void updateResponseInMaintenance(long portId, String response) {
+//		try {
+//			String updateQuery = "UPDATE ScheduledMaintenance SET response = '" + response + "' WHERE portId = " + portId;
+//			generalDao.updateHqlQuiries(updateQuery);
+//		} catch (Exception e) {
+//			e.printStackTrace();
+//		}
+//	}
 }

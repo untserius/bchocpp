@@ -1,10 +1,14 @@
 package com.axxera.ocpp.message;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import com.axxera.ocpp.model.ocpp.CSChargingProfiles;
 import com.axxera.ocpp.utils.Utils;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import javax.persistence.Column;
 
 public class OCPPForm {
 	private long stationId;
@@ -57,7 +61,10 @@ public class OCPPForm {
 	private String requestId;
 	private String apiRequestId=Utils.uuid();
 	
-	private long tariffId; 
+	private long tariffId;
+	@Column(name = "endTimeStamp")
+	@JsonProperty("endTimeStamp")
+	private Date endTimeStamp;
 	
 	public DataPojo getData() {
 		return data;
@@ -358,23 +365,63 @@ public class OCPPForm {
 	public void setTariffId(long tariffId) {
 		this.tariffId = tariffId;
 	}
+
+	public Date getEndTimeStamp() {return endTimeStamp;}
+	public void setEndTimeStamp(Date endTimeStamp) {this.endTimeStamp = endTimeStamp;}
+
 	@Override
 	public String toString() {
-		return "OCPPForm [stationId=" + stationId + ", stationIdList=" + stationIdList + ", stnRefNum=" + stnRefNum
-				+ ", connectorId=" + connectorId + ", requestType=" + requestType + ", key=" + key + ", value=" + value
-				+ ", listVersion=" + listVersion + ", retries=" + retries + ", retriesIntervals=" + retriesIntervals
-				+ ", startDate=" + startDate + ", endDate=" + endDate + ", manufacture=" + manufacture + ", fileName="
-				+ fileName + ", retrieveDate=" + retrieveDate + ", idTag=" + idTag + ", vendorId=" + vendorId
-				+ ", messageId=" + messageId + ", validFrom=" + validFrom + ", validTo=" + validTo + ", duration="
-				+ duration + ", startPeriod=" + startPeriod + ", type=" + type + ", stackLevel=" + stackLevel
-				+ ", profileId=" + profileId + ", limit=" + limit + ", chargingSchedule=" + chargingSchedule
-				+ ", chargingProfileInfo=" + chargingProfileInfo + ", transactionId=" + transactionId + ", userId="
-				+ userId + ", reservationId=" + reservationId + ", chargingProfilePurpose=" + chargingProfilePurpose
-				+ ", localAuthorizationLists=" + localAuthorizationLists + ", csChargingProfiles=" + csChargingProfiles
-				+ ", data=" + data + ", orgId=" + orgId + ", clientId=" + clientId + ", chargingRateUnit="
-				+ chargingRateUnit + ", uuid=" + uuid + ", paymentType=" + paymentType + ", promoCode=" + promoCode
-				+ ", userType=" + userType + ", rewardType=" + rewardType + ", selfCharging=" + selfCharging
-				+ ", powerSharing=" + powerSharing + ", message=" + message + ", requestId=" + requestId
-				+ ", apiRequestId=" + apiRequestId + ", tariffId=" + tariffId + "]";
+		return "OCPPForm{" +
+				"stationId=" + stationId +
+				", stationIdList=" + stationIdList +
+				", stnRefNum='" + stnRefNum + '\'' +
+				", connectorId=" + connectorId +
+				", requestType='" + requestType + '\'' +
+				", key='" + key + '\'' +
+				", value='" + value + '\'' +
+				", listVersion=" + listVersion +
+				", retries=" + retries +
+				", retriesIntervals=" + retriesIntervals +
+				", startDate='" + startDate + '\'' +
+				", endDate='" + endDate + '\'' +
+				", manufacture='" + manufacture + '\'' +
+				", fileName='" + fileName + '\'' +
+				", retrieveDate='" + retrieveDate + '\'' +
+				", idTag='" + idTag + '\'' +
+				", vendorId='" + vendorId + '\'' +
+				", messageId='" + messageId + '\'' +
+				", validFrom='" + validFrom + '\'' +
+				", validTo='" + validTo + '\'' +
+				", duration='" + duration + '\'' +
+				", startPeriod='" + startPeriod + '\'' +
+				", type='" + type + '\'' +
+				", stackLevel=" + stackLevel +
+				", profileId=" + profileId +
+				", limit=" + limit +
+				", chargingSchedule='" + chargingSchedule + '\'' +
+				", chargingProfileInfo='" + chargingProfileInfo + '\'' +
+				", transactionId='" + transactionId + '\'' +
+				", userId=" + userId +
+				", reservationId=" + reservationId +
+				", chargingProfilePurpose='" + chargingProfilePurpose + '\'' +
+				", localAuthorizationLists=" + localAuthorizationLists +
+				", csChargingProfiles=" + csChargingProfiles +
+				", data=" + data +
+				", orgId=" + orgId +
+				", clientId='" + clientId + '\'' +
+				", chargingRateUnit='" + chargingRateUnit + '\'' +
+				", uuid='" + uuid + '\'' +
+				", paymentType='" + paymentType + '\'' +
+				", promoCode='" + promoCode + '\'' +
+				", userType='" + userType + '\'' +
+				", rewardType='" + rewardType + '\'' +
+				", selfCharging=" + selfCharging +
+				", powerSharing=" + powerSharing +
+				", message='" + message + '\'' +
+				", requestId='" + requestId + '\'' +
+				", apiRequestId='" + apiRequestId + '\'' +
+				", tariffId=" + tariffId +
+				", endTimeStamp=" + endTimeStamp +
+				'}';
 	}
-}	
+}

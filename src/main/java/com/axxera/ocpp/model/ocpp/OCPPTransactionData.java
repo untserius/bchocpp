@@ -36,25 +36,7 @@ public class OCPPTransactionData extends BaseEntity {
 	private String kWhStatus;
 	private double maximumRevenue;
 	private double maxkWh;
-	private boolean energyModifyFlag;
-	private double maxCapacityPer;
-
-	public boolean isEnergyModifyFlag() {
-		return energyModifyFlag;
-	}
-
-	public void setEnergyModifyFlag(boolean energyModifyFlag) {
-		this.energyModifyFlag = energyModifyFlag;
-	}
-
-	public double getMaxCapacityPer() {
-		return maxCapacityPer;
-	}
-
-	public void setMaxCapacityPer(double maxCapacityPer) {
-		this.maxCapacityPer = maxCapacityPer;
-	}
-    
+    private boolean offlineTransaction;
     @Type(type = "json")
     @Column(columnDefinition="TEXT")
     private String tariff_prices;
@@ -311,40 +293,26 @@ public class OCPPTransactionData extends BaseEntity {
 		this.maxkWh = maxkWh;
 	}
 
+	public boolean isOfflineTransaction() {
+		return offlineTransaction;
+	}
+
+	public void setOfflineTransaction(boolean offlineTransaction) {
+		this.offlineTransaction = offlineTransaction;
+	}
+
 	@Override
 	public String toString() {
-		return "OCPPTransactionData{" +
-				"sessionId='" + sessionId + '\'' +
-				", portId=" + portId +
-				", userType='" + userType + '\'' +
-				", billingCases='" + billingCases + '\'' +
-				", stationMode='" + stationMode + '\'' +
-				", transactionId=" + transactionId +
-				", rstp=" + rstp +
-				", dgNoZeroBal=" + dgNoZeroBal +
-				", exceedingHours=" + exceedingHours +
-				", exceedingMints=" + exceedingMints +
-				", driverGroupId=" + driverGroupId +
-				", paymentMode='" + paymentMode + '\'' +
-				", orgId=" + orgId +
-				", tariffId=" + tariffId +
-				", minkWhEnergy=" + minkWhEnergy +
-				", meterStart=" + meterStart +
-				", idleStartTime=" + idleStartTime +
-				", reasonForTer='" + reasonForTer + '\'' +
-				", stop=" + stop +
-				", idleStatus='" + idleStatus + '\'' +
-				", kWhStatus='" + kWhStatus + '\'' +
-				", maximumRevenue=" + maximumRevenue +
-				", maxkWh=" + maxkWh +
-				", energyModifyFlag=" + energyModifyFlag +
-				", maxCapacityPer=" + maxCapacityPer +
-				", tariff_prices='" + tariff_prices + '\'' +
-				", free_prices='" + free_prices + '\'' +
-				", stn_obj='" + stn_obj + '\'' +
-				", site_obj='" + site_obj + '\'' +
-				", user_obj='" + user_obj + '\'' +
-				", reward='" + reward + '\'' +
-				'}';
+		return "OCPPTransactionData [sessionId=" + sessionId + ", portId=" + portId + ", userType=" + userType
+				+ ", billingCases=" + billingCases + ", stationMode=" + stationMode + ", transactionId=" + transactionId
+				+ ", rstp=" + rstp + ", dgNoZeroBal=" + dgNoZeroBal + ", exceedingHours=" + exceedingHours
+				+ ", exceedingMints=" + exceedingMints + ", driverGroupId=" + driverGroupId + ", paymentMode="
+				+ paymentMode + ", orgId=" + orgId + ", tariffId=" + tariffId + ", minkWhEnergy=" + minkWhEnergy
+				+ ", meterStart=" + meterStart + ", idleStartTime=" + idleStartTime + ", reasonForTer=" + reasonForTer
+				+ ", stop=" + stop + ", idleStatus=" + idleStatus + ", kWhStatus=" + kWhStatus + ", maximumRevenue="
+				+ maximumRevenue + ", maxkWh=" + maxkWh + ", tariff_prices=" + tariff_prices + ", free_prices="
+				+ free_prices + ", stn_obj=" + stn_obj + ", site_obj=" + site_obj + ", user_obj=" + user_obj
+				+ ", reward=" + reward + "]";
 	}
+	
 }

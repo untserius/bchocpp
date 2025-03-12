@@ -93,12 +93,12 @@ public class OCPPMeterValueServiceImpl {
 				paymentMode = "Credit Card";
 			}
 			if (accountTransactionObj == null) {
-				query = "insert into account_transaction (amtCredit,amtDebit,comment,createTimeStamp,modifiedDate,currentBalance,customerId,"
-						+ " customerIdAtStationType,status,account_id,sessionId,currencyType,currencyRate,lastUpdatedTime,paymentMode,transactionType,uid) values ('"
-						+ refundAmount + "','" + amtDebit + "','" + comment + "'," + " '" + utctime + "','"+utctime+"','"
+				query = "insert into account_transaction (amtCredit,amtDebit,comment,createTimeStamp,currentBalance,customerId,"
+						+ " customerIdAtStationType,status,account_id,sessionId,currencyType,currencyRate,lastUpdatedTime,paymentMode,transactionType) values ('"
+						+ refundAmount + "','" + amtDebit + "','" + comment + "'," + " '" + utctime + "','"
 						+ remainingBalance + "','" + customerId + "','" + 1l + "','" + status + "','"
 						+ account.get("accid") + "','" + sessionId + "','" + usercurrencyType + "','" + currencyRate
-						+ "','" + utctime + "' ,'" + paymentMode + "','" + transactionType + "','"+utils.getuuidRandomId()+"')";
+						+ "','" + utctime + "' ,'" + paymentMode + "','" + transactionType + "')";
 				execute = executeRepository.update(query);
 				logger.info(stationRefNum + " , inserted into acc txn table : " + query);
 
@@ -107,7 +107,7 @@ public class OCPPMeterValueServiceImpl {
 						+ "'," + " currentBalance='" + remainingBalance + "',status='" + status + "'," + " account_id='"
 						+ account.get("accid") + "',sessionId='" + sessionId + "',currencyType='" + usercurrencyType
 						+ "',currencyRate='" + currencyRate + "',lastUpdatedTime='" + utctime + "' ,paymentMode='"
-						+ paymentMode + "',transactionType='" + transactionType + "',modifiedDate='" +utctime+ "' where id = '"
+						+ paymentMode + "',transactionType='" + transactionType + "' where id = '"
 						+ accountTransactionObj.getId() + "'";
 				long updateSQL = Long.valueOf(executeRepository.update(query));
 				if (updateSQL > 0) {
@@ -119,7 +119,7 @@ public class OCPPMeterValueServiceImpl {
 			}
 			if (!paymentMode.equalsIgnoreCase("Credit Card") && !paymentMode.equalsIgnoreCase("Card")) {
 				String queryForAccountBalanceUpdate = "update Accounts set accountBalance=" + remainingBalance
-						+ ", modifiedDate= GETUTCDATE() where id=" + account.get("accid");
+						+ " where id=" + account.get("accid");
 				logger.info(stationRefNum + " , update accnts table : " + queryForAccountBalanceUpdate);
 				generalDao.updateHqlQuiries(queryForAccountBalanceUpdate);
 			}
@@ -356,7 +356,7 @@ public class OCPPMeterValueServiceImpl {
 						String deleteActiveTrans2 = "delete from ocpp_activeTransaction where connectorId in(" + connectorid + ")";
 						executeRepository.update(deleteActiveTrans2);
 						Thread.sleep(500);
-						String deleteActiveTrans = "Update session set reasonForTer ='EVDisconnected',transactionStatus='completed', modifiedDate=GETUTCDATE() where reasonForTer = 'InSession' and port_id = "
+						String deleteActiveTrans = "Update session set reasonForTer ='EVDisconnected',transactionStatus='completed' where reasonForTer = 'InSession' and port_id = "
 								+ connectorid + " ";
 						executeRepository.update(deleteActiveTrans);
 					}catch (Exception e) {

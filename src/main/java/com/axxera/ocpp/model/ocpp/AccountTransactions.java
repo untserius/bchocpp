@@ -28,12 +28,6 @@ public class AccountTransactions extends BaseEntity {
 	@Temporal(TemporalType.DATE)
 	@Column(name = "createTimeStamp", length = 10)
 	private Date createTimeStamp;
-
-	@Temporal(TemporalType.DATE)
-	@Column(name = "modifiedDate", length = 10)
-	private Date modifiedDate;
-
-	private String uid;
 	private double amtDebit;
 	private double amtCredit;
 	private double currentBalance;
@@ -47,7 +41,6 @@ public class AccountTransactions extends BaseEntity {
 	private double currencyRate;
 	private String currencySymbol;
 	private Date lastUpdatedTime;
-
 
 	public Date getLastUpdatedTime() {
 		return lastUpdatedTime;
@@ -161,12 +154,4 @@ public class AccountTransactions extends BaseEntity {
 	public void setTransactionType(String transactionType) {
 		this.transactionType = transactionType;
 	}
-
-	public Date getModifiedDate() {return modifiedDate;}
-
-	public void setModifiedDate(Date modifiedDate) {this.modifiedDate = modifiedDate;}
-
-	public String getUid() {return uid;}
-
-	public void setUid(String uid) {this.uid = uid;}
 }
